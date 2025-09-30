@@ -17,14 +17,14 @@ async function getCoinData(id, elementId) {
 }
 
 // render chart
-async function renderChart() {
+async function renderBTCChart() {
   const res = await fetch(`${apiURL}/coins/bitcoin/market_chart?vs_currency=usd&days=7`);
   const data = await res.json();
 
   const labels = data.prices.map(p => new Date(p[0]).toLocaleDateString());
   const prices = data.prices.map(p => p[1]);
 
-  new Chart(document.getElementById("priceChart"), {
+  new Chart(document.getElementById("priceBTCChart"), {
     type: "line",
     data: {
       labels: labels,
@@ -44,9 +44,65 @@ async function renderChart() {
     }
   });
 }
+async function renderETHChart() {
+  const res = await fetch(`${apiURL}/coins/ethereum/market_chart?vs_currency=usd&days=7`);
+  const data = await res.json();
+
+  const labels = data.prices.map(p => new Date(p[0]).toLocaleDateString());
+  const prices = data.prices.map(p => p[1]);
+
+  new Chart(document.getElementById("priceETHChart"), {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "ETH Price (USD)",
+        data: prices,
+        borderColor: "purple",
+        backgroundColor: "rgba(67, 57, 206, 0.1)",
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { display: false }
+      }
+    }
+  });
+}
+async function renderDOGEChart() {
+  const res = await fetch(`${apiURL}/coins/dogecoin/market_chart?vs_currency=usd&days=7`);
+  const data = await res.json();
+
+  const labels = data.prices.map(p => new Date(p[0]).toLocaleDateString());
+  const prices = data.prices.map(p => p[1]);
+
+  new Chart(document.getElementById("priceDOGEChart"), {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "Dogecoin Price (USD)",
+        data: prices,
+        borderColor: "yellow",
+        backgroundColor: "rgba(240, 216, 0, 0.1)",
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { display: false }
+      }
+    }
+  });
+}
 
 // run
 getCoinData("bitcoin", "btc");
 getCoinData("ethereum", "eth");
 getCoinData("dogecoin", "doge");
-renderChart();
+renderBTCChart();
+renderETHChart();
+renderDOGEChart();
