@@ -1,0 +1,46 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0d1117;
+  color: #c9d1d9;
+  text-align: center;
+}
+
+header {
+  background: #161b22;
+  padding: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+h1 {
+  margin: 0;
+}
+
+#prices {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem;
+  flex-wrap: wrap;
+}
+
+.card {
+  background: #21262d;
+  padding: 1rem;
+  border-radius: 10px;
+  width: 200px;
+  box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.1);
+}
+
+.card img {
+  width: 40px;
+}
+
+#chart-section {
+  margin: 2rem;
+  background: #21262d;
+  padding: 1rem;
+  border-radius: 10px;
+}
