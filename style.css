@@ -38,9 +38,22 @@ h1 {
   width: 40px;
 }
 
+.charts {
+  display: flex;
+  gap: 10px; 
+  justify-content: center;
+}
+
 #chart-section {
+  flex: 1; max-width: 33%;
   margin: 2rem;
   background: #21262d;
-  padding: 1rem;
+  padding: 5rem;
+  border-radius: 10px;
+}
+#custom-chart {
+  margin: 2rem;
+  background: #21262d;
+  padding: 5rem;
   border-radius: 10px;
 }
