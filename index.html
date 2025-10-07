@@ -13,26 +13,52 @@
   </header>
 
   <main>
+    <section class="search" aria-label="Search for a cryptocurrency">
+      <form id="coinSearchForm" class="search-form" role="search">
+        <label for="coinSearchInput">Look up any coin</label>
+        <div class="search-controls">
+          <input
+            type="search"
+            id="coinSearchInput"
+            name="coinSearch"
+            placeholder="Search by name or symbol (e.g., solana, ada)"
+            autocomplete="off"
+            required
+          >
+          <button type="submit">Search</button>
+        </div>
+        <p id="coinSearchFeedback" class="status-message" aria-live="polite"></p>
+      </form>
+
+      <div id="searchResult" class="search-result" hidden>
+        <div class="card" id="search-card" aria-live="polite"></div>
+        <section class="chart-section" id="search-chart-section">
+          <h2 class="chart-title">Coin Price (7d)</h2>
+          <canvas id="searchChart"></canvas>
+        </section>
+      </div>
+    </section>
+
     <section id="prices">
-      <div class="card" id="btc"></div>
-      <div class="card" id="eth"></div>
-      <div class="card" id="doge"></div>
+      <div class="card" id="btc" aria-live="polite"></div>
+      <div class="card" id="eth" aria-live="polite"></div>
+      <div class="card" id="doge" aria-live="polite"></div>
     </section>
 
     <div class="charts">
-    <section id="chart-section">
-      <h2>Bitcoin Price (7d)</h2>
-      <canvas id="priceBTCChart"></canvas>
-    </section>
-    <section id="chart-section">
-      <h2>Ethereum Price (7d)</h2>
-      <canvas id="priceETHChart"></canvas>
-    </section>
-    <section id="chart-section">
-      <h2>Dogecoin Price (7d)</h2>
-      <canvas id="priceDOGEChart"></canvas>
-    </section>
-  </div>
+      <section class="chart-section">
+        <h2 class="chart-title">Bitcoin Price (7d)</h2>
+        <canvas id="priceBTCChart"></canvas>
+      </section>
+      <section class="chart-section">
+        <h2 class="chart-title">Ethereum Price (7d)</h2>
+        <canvas id="priceETHChart"></canvas>
+      </section>
+      <section class="chart-section">
+        <h2 class="chart-title">Dogecoin Price (7d)</h2>
+        <canvas id="priceDOGEChart"></canvas>
+      </section>
+    </div>
   </main>
 
   <footer>

@@ -18,42 +18,260 @@ h1 {
   margin: 0;
 }
 
+.search {
+  margin: 2rem auto 0;
+  max-width: 960px;
+  padding: 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.search-form {
+  background: #161b22;
+  border-radius: 12px;
+  padding: 1.75rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0px 12px 32px rgba(2, 6, 23, 0.35);
+}
+
+.search-form label {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.search-controls {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.search-form input {
+  flex: 1 1 220px;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid #30363d;
+  background: #0d1117;
+  color: #c9d1d9;
+  font-size: 1rem;
+}
+
+.search-form input:focus {
+  outline: none;
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.25);
+}
+
+.search-form button {
+  padding: 0.85rem 1.5rem;
+  border-radius: 10px;
+  border: none;
+  background: #238636;
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.search-form button:hover,
+.search-form button:focus {
+  background: #2ea043;
+}
+
+.search-result {
+  display: grid;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+#searchResult[hidden] {
+  display: none;
+}
+
+.search-result .chart-section {
+  min-height: 100%;
+}
+
+.search-result .card {
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  .search-result {
+    grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  }
+}
+
 #prices {
   display: flex;
   justify-content: center;
   gap: 1rem;
   margin: 2rem;
   flex-wrap: wrap;
+  align-items: stretch;
 }
 
 .card {
   background: #21262d;
-  padding: 1rem;
-  border-radius: 10px;
-  width: 200px;
-  box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.1);
+  padding: 1.25rem;
+  border-radius: 12px;
+  width: 260px;
+  box-shadow: 0px 12px 32px rgba(2, 6, 23, 0.35);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.card img {
-  width: 40px;
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.card-header img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  padding: 0.4rem;
+  background: #161b22;
+}
+
+.card-header h3 {
+  margin: 0;
+}
+
+.card-updated {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #8b949e;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.card-price {
+  font-size: 1.75rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+.card-change {
+  margin: 0;
+  font-weight: 600;
+}
+
+.card-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+}
+
+.card-meta div {
+  background: #161b22;
+  padding: 0.75rem;
+  border-radius: 10px;
+}
+
+.card-meta dt {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8b949e;
+}
+
+.card-meta dd {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-align: left;
 }
 
 .charts {
   display: flex;
-  gap: 10px; 
+  flex-wrap: wrap;
+  gap: 1.5rem;
   justify-content: center;
+  margin: 0 2rem 3rem;
 }
 
-#chart-section {
-  flex: 1; max-width: 33%;
-  margin: 2rem;
+.chart-section {
+  flex: 1 1 280px;
+  max-width: 360px;
   background: #21262d;
-  padding: 5rem;
+  padding: 2rem 1.5rem;
   border-radius: 10px;
+  box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
 }
-#custom-chart {
-  margin: 2rem;
-  background: #21262d;
-  padding: 5rem;
-  border-radius: 10px;
+
+.chart-title {
+  margin-top: 0;
+}
+
+.chart-section canvas {
+  width: 100% !important;
+  height: 240px !important;
+  flex: 1 1 auto;
+}
+
+.price-change {
+  font-weight: bold;
+}
+
+.price-change.positive {
+  color: #3fb950;
+}
+
+.price-change.negative {
+  color: #f85149;
+}
+
+.price-change.neutral {
+  color: #8b949e;
+}
+
+.status-message {
+  margin: 0;
+  color: #8b949e;
+  font-style: italic;
+}
+
+.status-message.error {
+  color: #f85149;
+  font-style: normal;
+}
+
+.chart-status {
+  margin-top: 1.25rem;
+  color: #8b949e;
+  font-style: italic;
+}
+
+.chart-status--error {
+  color: #f85149;
+  font-style: normal;
+}
+
+@media (max-width: 768px) {
+  .card {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .card-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

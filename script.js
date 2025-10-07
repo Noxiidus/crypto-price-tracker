@@ -1,108 +1,400 @@
-const apiURL = "https://api.coingecko.com/api/v3";
+const API_BASE_URL = "https://api.coingecko.com/api/v3";
 
-// fetch coin data
-async function getCoinData(id, elementId) {
-  const res = await fetch(`${apiURL}/coins/markets?vs_currency=usd&ids=${id}`);
-  const data = await res.json();
-  const coin = data[0];
+const priceFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
-  document.getElementById(elementId).innerHTML = `
-    <img src="${coin.image}" alt="${coin.name}">
-    <h3>${coin.name}</h3>
-    <p>💲 ${coin.current_price.toLocaleString()} USD</p>
-    <p>24h: <span style="color:${coin.price_change_percentage_24h > 0 ? "lime" : "red"}">
-      ${coin.price_change_percentage_24h.toFixed(2)}%
-    </span></p>
+const compactCurrencyFormatter = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  notation: "compact",
+  maximumFractionDigits: 2,
+});
+
+const percentFormatter = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+  signDisplay: "exceptZero",
+});
+
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+});
+
+const coins = [
+  {
+    id: "bitcoin",
+    name: "Bitcoin",
+    cardId: "btc",
+    chart: {
+      canvasId: "priceBTCChart",
+      lineColor: "#3fb950",
+      fillColor: "rgba(63, 185, 80, 0.15)",
+    },
+  },
+  {
+    id: "ethereum",
+    name: "Ethereum",
+    cardId: "eth",
+    chart: {
+      canvasId: "priceETHChart",
+      lineColor: "#6f42c1",
+      fillColor: "rgba(111, 66, 193, 0.15)",
+    },
+  },
+  {
+    id: "dogecoin",
+    name: "Dogecoin",
+    cardId: "doge",
+    chart: {
+      canvasId: "priceDOGEChart",
+      lineColor: "#facc15",
+      fillColor: "rgba(250, 204, 21, 0.15)",
+    },
+  },
+];
+
+const chartInstances = new Map();
+const SEARCH_CHART_STYLES = {
+  lineColor: "#58a6ff",
+  fillColor: "rgba(88, 166, 255, 0.18)",
+};
+
+async function fetchJSON(path) {
+  const response = await fetch(`${API_BASE_URL}${path}`, { cache: "no-store" });
+
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function formatCurrency(value, { compact = false } = {}) {
+  const numeric = Number(value);
+
+  if (!Number.isFinite(numeric)) {
+    return "—";
+  }
+
+  return compact ? compactCurrencyFormatter.format(numeric) : priceFormatter.format(numeric);
+}
+
+function setStatus(element, message, { modifier = "", tag = "p" } = {}) {
+  const statusElement = document.createElement(tag);
+  statusElement.className = ["status-message", modifier].filter(Boolean).join(" ");
+  statusElement.textContent = message;
+  statusElement.setAttribute("role", modifier === "error" ? "alert" : "status");
+  element.innerHTML = "";
+  element.appendChild(statusElement);
+}
+
+function renderCoinCard(container, coin) {
+  const changeRaw = Number(coin.price_change_percentage_24h);
+  const hasChange = Number.isFinite(changeRaw);
+  const changeValue = hasChange ? changeRaw : 0;
+  const changeClass = changeValue > 0 ? "positive" : changeValue < 0 ? "negative" : "neutral";
+  const changeArrow = changeValue > 0 ? "▲" : changeValue < 0 ? "▼" : "⦿";
+  const changeText = hasChange ? `${percentFormatter.format(changeValue)}%` : "N/A";
+  const updatedDate = coin.last_updated ? new Date(coin.last_updated) : null;
+
+  container.innerHTML = `
+    <div class="card-header">
+      <img src="${coin.image}" alt="${coin.name} logo" loading="lazy">
+      <div>
+        <h3>${coin.name}</h3>
+        <p class="card-updated">${
+          updatedDate ? `Updated ${updatedDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Updated recently"
+        }</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="card-price">${formatCurrency(coin.current_price)}</p>
+      <p class="card-change">
+        24h: <span class="price-change ${changeClass}">${changeArrow} ${changeText}</span>
+      </p>
+      <dl class="card-meta">
+        <div>
+          <dt>24h High</dt>
+          <dd>${formatCurrency(coin.high_24h)}</dd>
+        </div>
+        <div>
+          <dt>24h Low</dt>
+          <dd>${formatCurrency(coin.low_24h)}</dd>
+        </div>
+        <div>
+          <dt>Market Cap</dt>
+          <dd>${formatCurrency(coin.market_cap, { compact: true })}</dd>
+        </div>
+      </dl>
+    </div>
   `;
 }
 
-// render chart
-async function renderBTCChart() {
-  const res = await fetch(`${apiURL}/coins/bitcoin/market_chart?vs_currency=usd&days=7`);
-  const data = await res.json();
+async function loadCoinCard(coinConfig) {
+  const container = document.getElementById(coinConfig.cardId);
 
-  const labels = data.prices.map(p => new Date(p[0]).toLocaleDateString());
-  const prices = data.prices.map(p => p[1]);
+  if (!container) {
+    return;
+  }
 
-  new Chart(document.getElementById("priceBTCChart"), {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: [{
-        label: "BTC Price (USD)",
-        data: prices,
-        borderColor: "lime",
-        backgroundColor: "rgba(0,255,0,0.1)",
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        x: { display: false }
+  container.setAttribute("aria-busy", "true");
+  setStatus(container, "Loading price…");
+
+  try {
+    const [coin] = await fetchJSON(`/coins/markets?vs_currency=usd&ids=${coinConfig.id}`);
+
+    if (!coin) {
+      throw new Error("No data received");
+    }
+
+    renderCoinCard(container, coin);
+    container.removeAttribute("aria-busy");
+  } catch (error) {
+    console.error(`Failed to load ${coinConfig.id} data`, error);
+    setStatus(container, `Unable to load ${coinConfig.name} data.`, { modifier: "error" });
+    container.setAttribute("aria-busy", "false");
+  }
+}
+
+function setChartStatus(section, message, modifier = "") {
+  if (!section) {
+    return;
+  }
+
+  let status = section.querySelector(".chart-status");
+
+  if (!status) {
+    status = document.createElement("p");
+    status.className = "chart-status";
+    section.appendChild(status);
+  }
+
+  status.textContent = message;
+  status.className = ["chart-status", modifier ? `chart-status--${modifier}` : ""].filter(Boolean).join(" ");
+  status.setAttribute("role", modifier === "error" ? "alert" : "status");
+}
+
+async function renderChart(coinConfig) {
+  const { chart, id: coinId, name } = coinConfig;
+  const canvas = document.getElementById(chart.canvasId);
+
+  if (!canvas) {
+    return;
+  }
+
+  canvas.setAttribute("role", "img");
+  canvas.setAttribute("aria-label", `${name} price chart for the last 7 days`);
+
+  const section = canvas.closest(".chart-section");
+  const heading = section?.querySelector(".chart-title");
+  if (heading) {
+    heading.textContent = `${name} Price (7d)`;
+  }
+  setChartStatus(section, "Loading chart…");
+
+  try {
+    const data = await fetchJSON(`/coins/${coinId}/market_chart?vs_currency=usd&days=7&interval=daily`);
+
+    if (!data?.prices?.length) {
+      throw new Error("No chart data available");
+    }
+
+    const labels = data.prices.map((pricePoint) => dateFormatter.format(new Date(pricePoint[0])));
+    const prices = data.prices.map((pricePoint) => Number(pricePoint[1]));
+
+    if (chartInstances.has(chart.canvasId)) {
+      chartInstances.get(chart.canvasId).destroy();
+    }
+
+    const chartInstance = new Chart(canvas, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: `${name} Price (USD)`,
+            data: prices,
+            borderColor: chart.lineColor,
+            backgroundColor: chart.fillColor,
+            borderWidth: 2,
+            fill: true,
+            tension: 0.35,
+            pointRadius: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: "#8b949e",
+            },
+          },
+          y: {
+            ticks: {
+              color: "#8b949e",
+              callback: (value) => priceFormatter.format(value),
+            },
+          },
+        },
+        plugins: {
+          legend: {
+            labels: {
+              color: "#c9d1d9",
+            },
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => priceFormatter.format(context.parsed.y),
+            },
+          },
+        },
+      },
+    });
+
+    chartInstances.set(chart.canvasId, chartInstance);
+
+    if (section) {
+      const status = section.querySelector(".chart-status");
+      if (status) {
+        status.remove();
+      }
+    }
+  } catch (error) {
+    console.error(`Failed to render ${coinId} chart`, error);
+    setChartStatus(section, `Unable to load ${name} chart.`, "error");
+  }
+}
+
+function destroyChartInstance(canvasId) {
+  if (!chartInstances.has(canvasId)) {
+    return;
+  }
+
+  chartInstances.get(canvasId).destroy();
+  chartInstances.delete(canvasId);
+}
+
+function setupCoinSearch() {
+  const form = document.getElementById("coinSearchForm");
+
+  if (!form) {
+    return;
+  }
+
+  const input = document.getElementById("coinSearchInput");
+  const feedback = document.getElementById("coinSearchFeedback");
+  const resultContainer = document.getElementById("searchResult");
+  const cardContainer = document.getElementById("search-card");
+  const chartSection = document.getElementById("search-chart-section");
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const query = input?.value.trim();
+
+    if (!query) {
+      if (feedback) {
+        feedback.textContent = "Type a coin name or symbol to search.";
+        feedback.className = "status-message";
+      }
+      return;
+    }
+
+    if (resultContainer) {
+      resultContainer.hidden = false;
+    }
+
+    if (feedback) {
+      feedback.textContent = `Searching for “${query}”…`;
+      feedback.className = "status-message";
+    }
+
+    try {
+      const response = await fetchJSON(`/search?query=${encodeURIComponent(query)}`);
+      const matches = response?.coins ?? [];
+      const normalizedQuery = query.toLowerCase();
+      const match =
+        matches.find((coin) => coin.id?.toLowerCase() === normalizedQuery) ||
+        matches.find((coin) => coin.symbol?.toLowerCase() === normalizedQuery) ||
+        matches.find((coin) => coin.name?.toLowerCase() === normalizedQuery) ||
+        matches[0];
+
+      if (!match) {
+        if (feedback) {
+          feedback.textContent = `No coins found for “${query}”. Try another search.`;
+          feedback.className = "status-message error";
+        }
+
+        if (cardContainer) {
+          cardContainer.setAttribute("aria-busy", "false");
+          setStatus(cardContainer, "No coin data to display.", { modifier: "error" });
+        }
+
+        if (chartSection) {
+          destroyChartInstance("searchChart");
+          setChartStatus(chartSection, "No chart data available.", "error");
+        }
+
+        return;
+      }
+
+      const symbol = match.symbol ? match.symbol.toUpperCase() : "";
+
+      if (feedback) {
+        feedback.textContent = symbol ? `${match.name} (${symbol})` : match.name;
+        feedback.className = "status-message";
+      }
+
+      const coinConfig = {
+        id: match.id,
+        name: match.name,
+        cardId: "search-card",
+        chart: {
+          canvasId: "searchChart",
+          lineColor: SEARCH_CHART_STYLES.lineColor,
+          fillColor: SEARCH_CHART_STYLES.fillColor,
+        },
+      };
+
+      loadCoinCard(coinConfig);
+      renderChart(coinConfig);
+    } catch (error) {
+      console.error("Coin search failed", error);
+
+      if (feedback) {
+        feedback.textContent = "Search failed. Please try again.";
+        feedback.className = "status-message error";
+      }
+
+      if (cardContainer) {
+        cardContainer.setAttribute("aria-busy", "false");
+        setStatus(cardContainer, "Unable to load coin data.", { modifier: "error" });
+      }
+
+      if (chartSection) {
+        destroyChartInstance("searchChart");
+        setChartStatus(chartSection, "Unable to load chart data.", "error");
       }
     }
   });
 }
-async function renderETHChart() {
-  const res = await fetch(`${apiURL}/coins/ethereum/market_chart?vs_currency=usd&days=7`);
-  const data = await res.json();
 
-  const labels = data.prices.map(p => new Date(p[0]).toLocaleDateString());
-  const prices = data.prices.map(p => p[1]);
-
-  new Chart(document.getElementById("priceETHChart"), {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: [{
-        label: "ETH Price (USD)",
-        data: prices,
-        borderColor: "purple",
-        backgroundColor: "rgba(67, 57, 206, 0.1)",
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        x: { display: false }
-      }
-    }
+function initialize() {
+  coins.forEach((coin) => {
+    loadCoinCard(coin);
+    renderChart(coin);
   });
-}
-async function renderDOGEChart() {
-  const res = await fetch(`${apiURL}/coins/dogecoin/market_chart?vs_currency=usd&days=7`);
-  const data = await res.json();
 
-  const labels = data.prices.map(p => new Date(p[0]).toLocaleDateString());
-  const prices = data.prices.map(p => p[1]);
-
-  new Chart(document.getElementById("priceDOGEChart"), {
-    type: "line",
-    data: {
-      labels: labels,
-      datasets: [{
-        label: "Dogecoin Price (USD)",
-        data: prices,
-        borderColor: "yellow",
-        backgroundColor: "rgba(240, 216, 0, 0.1)",
-        fill: true
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        x: { display: false }
-      }
-    }
-  });
+  setupCoinSearch();
 }
 
-// run
-getCoinData("bitcoin", "btc");
-getCoinData("ethereum", "eth");
-getCoinData("dogecoin", "doge");
-renderBTCChart();
-renderETHChart();
-renderDOGEChart();
+initialize();
